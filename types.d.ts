@@ -461,6 +461,7 @@ export type Song = {
   correctGuess: boolean;
   incorrectGuess: boolean;
   rating: number | null;
+  annSongId?: number;
 };
 
 export type MessageDisplayer = {
@@ -651,3 +652,33 @@ declare class GameChat {
   $chatMessageContainer: JQuery<HTMLDivElement>;
   spectators: NewSpectatorPayload[];
 }
+
+/**
+ * Data for creating an official custom quiz
+ */
+export type SaveQuizData = {
+  quizSave: {
+    name: string;
+    description: string;
+    tags: string[];
+    ruleBlocks: {
+      randomOrder: boolean;
+      songCount: number;
+      guessTime: {
+        guessTime: number;
+        extraGuessTime: number;
+      };
+      samplePoint: {
+        samplePoint: [number, number];
+      };
+      playBackSpeed: {
+        playBackSpeed: number;
+      };
+      blocks: { annSongId: number }[];
+    }[];
+  };
+  /**
+   * The id of the existing quiz to update, or null if creating a new quiz
+   */
+  quizId: number | null;
+};

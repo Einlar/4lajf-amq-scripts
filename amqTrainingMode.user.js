@@ -822,6 +822,48 @@ function filterSongList() {
 }
 
 /**
+ * Save a song list to an official custom quiz
+ *
+ * @param {Object} params
+ * @param {string} params.name The name of the quiz
+ * @param {number[]} params.songIds The annSongIds of the songs to save
+ */
+const saveToCustomQuiz = ({ name, songIds }) => {
+  /** @type {import('./types.js').SaveQuizData} */
+  const data = {
+    quizSave: {
+      name,
+      description: "",
+      tags: [],
+      ruleBlocks: [
+        {
+          randomOrder: true,
+          songCount: 20,
+          guessTime: {
+            guessTime: 20,
+            extraGuessTime: 0,
+          },
+          samplePoint: {
+            samplePoint: [0, 100],
+          },
+          playBackSpeed: {
+            playBackSpeed: 1,
+          },
+          blocks: songIds.map((songId) => ({ annSongId: songId })),
+        },
+      ],
+    },
+    quizId: null,
+  };
+
+  socket.sendCommand({
+    type: "quizCreator",
+    command: "save quiz",
+    data,
+  });
+};
+
+/**
  * Shuffle the elements of an array in place.
  *
  * @template T
@@ -970,7 +1012,8 @@ $("#gameContainer").append(
 									<button id="cslgAddAllButton" class="btn-icon"><i class="fa fa-plus-square"></i></button>
 									<button id="cslgClearSongListButton" class="btn-icon"><i class="fa fa-trash"></i></button>
 									<button id="cslgTransferSongListButton" class="btn-icon"><i class="fa fa-exchange"></i></button>
-									<button id="cslgTableModeButton" class="btn-icon""><i class="fa fa-table"></i></button>
+									<button id="cslgTableModeButton" class="btn-icon"><i class="fa fa-table"></i></button>
+                  <button id="cslgSaveToCustomQuiz" class="btn-icon"><i class="fa fa-save"></i></button>
 								</div>
 							</div>
 							<div class="cslg-header-row">
@@ -1653,6 +1696,34 @@ $("#cslgAddAllButton")
   })
   .popover({
     content: () => (isSearchMode ? "Add all to My Songs" : "Add all to merged"),
+    trigger: "hover",
+    placement: "bottom",
+  });
+
+/**
+ * Save songs to a new Custom Quiz
+ */
+$("#cslgSaveToCustomQuiz")
+  .on("click", () => {
+    if (!isSearchMode) {
+      const annSongIds = mySongList.flatMap((s) => s.annSongId ?? []);
+      if (annSongIds.length === 0) {
+        messageDisplayer.displayMessage(
+          "This feature works only when importing songs from AnisongDB."
+        );
+        return;
+      }
+
+      let quizName = prompt("Enter a name for the new Custom Quiz:");
+      if (quizName === null) {
+        quizName = "CSL Export";
+      }
+
+      saveToCustomQuiz({ name: quizName, songIds: annSongIds });
+    }
+  })
+  .popover({
+    content: "Save songs to a new Official Custom Quiz",
     trigger: "hover",
     placement: "bottom",
   });
@@ -5197,6 +5268,7 @@ function updateModeDisplay() {
     createSongListTable(songList);
     $("#cslgAnisongdbSearchRow").show();
     $("#cslgAddAllButton").attr("title", "Add all to My Songs");
+    $("#cslgSaveToCustomQuiz").hide();
     $("#cslgTransferSongListButton").attr(
       "title",
       "Transfer from merged to search results"
@@ -5205,6 +5277,7 @@ function updateModeDisplay() {
     createSongListTable(mySongList);
     $("#cslgAnisongdbSearchRow").hide();
     $("#cslgAddAllButton").attr("title", "Add all to merged");
+    $("#cslgSaveToCustomQuiz").show();
     $("#cslgTransferSongListButton").attr(
       "title",
       "Transfer from merged to My Songs"
@@ -5535,6 +5608,7 @@ function handleData(data) {
         correctGuess: true,
         incorrectGuess: true,
         rating: null,
+        annSongId: song.annSongId,
       });
     }
     for (let song of finalSongList) {
